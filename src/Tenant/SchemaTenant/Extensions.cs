@@ -18,18 +18,23 @@ namespace webapi_80.src.Tenant.SchemaTenant
             {
                 TenantSchema tenantSchema = new TenantSchema();
                 var origin = tenantSchema.ExtractSubdomainFromRequest(context);
-                // tenantSchema.
                 tenantSchema._schema = origin;
                 var schemaExists = await tenantSchema.DoesCurrentSubdomainExist();
-                Console.WriteLine($"context.Request.Headers {context.Request.Headers["Referer"]}, origin {origin}, tenantSchema._schema {tenantSchema._schema}, schemaExists {schemaExists}");
                 if(!schemaExists) {
-                    // tenant doesnt exist
-                    var tenantCreated = await tenantSchema.NewTenant(tenantSchema._schema);
-                    if (tenantCreated.ResponseCode == "201") Console.WriteLine($"tenantCreated {tenantCreated}");
+                    // var tenantCreated = await tenantSchema.NewTenant(tenantSchema._schema);
+                    // if (tenantCreated.ResponseCode == "201") Console.WriteLine($"tenantCreated {tenantCreated}");
+
+                    context.Response.StatusCode = 404;
+                    context.Response.ContentType = "application/json";
+                    var response = new {
+                        ResponseCode = "404",
+                        ResponseMessage = "Tenant Not found",
+                    };
+                    await context.Response.WriteAsync(JsonConvert.SerializeObject(response));
+                    return;
+
                 }
 
-                
-                // check schema if not exist on every request
                 await next.Invoke();
             });
             return builder;

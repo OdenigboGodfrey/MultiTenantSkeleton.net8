@@ -69,16 +69,6 @@ namespace webapi_80.src.Tenant.SchemaTenant
             return string.IsNullOrEmpty(_schemaExist) ? false : true;
         }
 
-        private async Task<int> ExecSQL(string sql)
-        {
-            return (int)await this.context.Database.ExecuteSqlRawAsync(sql);
-        }
-
-        private T ExecScalar<T>(string sql, List<DbParameter> parameters)
-        {
-            return (T)context.ExecuteScalar(sql, parameters);
-        }
-
         public string getSubdomainName(string domainURL)
         {
             string domainName = domainURL;

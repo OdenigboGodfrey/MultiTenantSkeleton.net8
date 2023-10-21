@@ -20,26 +20,14 @@ namespace webapi_80.src.User.Controllers
     [Produces("Application/json")]
     [ApiController]
 
-    public class IdentityController : ControllerBase
+    public class IdentityController(IUnitofwork unitofwork, IConfiguration config, IPasswordHasher<UserModel> _passwordHasher) : ControllerBase
     {
 
-        private readonly IUnitofwork Services_Repo;
-        public readonly IConfiguration config;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUnitofwork Services_Repo = unitofwork;
+        public readonly IConfiguration config = config;
         private NLog.ILogger Log = LogManager.GetLogger("IdentityController");
-        private ITenantSchema tenantSchema;
-        private readonly IPasswordHasher<UserModel> _passwordHasher;
+        private readonly IPasswordHasher<UserModel> _passwordHasher = _passwordHasher;
 
-        public IdentityController(IUnitofwork unitofwork, IConfiguration config, IHttpContextAccessor httpContextAccessor, ITenantSchema tenantSchema, IPasswordHasher<UserModel> _passwordHasher)
-
-        {
-            this.Services_Repo = unitofwork;
-            this.config = config;
-            _httpContextAccessor = httpContextAccessor;
-            this.tenantSchema = tenantSchema;
-            this._passwordHasher = _passwordHasher;
-
-        }
         [HttpGet]
         [Route("GetAllUsers")]
         public async Task<IActionResult> GetAllUsers(

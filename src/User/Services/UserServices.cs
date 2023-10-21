@@ -12,25 +12,16 @@ using webapi_80.src.Shared.ViewModels;
 
 namespace webapi_80.src.User.Services
 {
-    public class UserServices : IUserServices
+    public class UserServices(ApplicationDbContext _db, ApplicationDbContext subdomainSchemaContext) : IUserServices
     {
 
-        private ApplicationDbContext publicSchemaContext;
-        private IHttpContextAccessor _httpContextAccessor;
-        private UserManager<UserModel> UserManager;
-        ApplicationDbContext subdomainSchemaContext;
-
-        public UserServices(ApplicationDbContext _db, IHttpContextAccessor httpContextAccessor, ApplicationDbContext subdomainSchemaContext)
-        {
-            this.publicSchemaContext = _db;
-            _httpContextAccessor = httpContextAccessor;
-            this.subdomainSchemaContext = subdomainSchemaContext;
-        }
+        private ApplicationDbContext publicSchemaContext = _db;
+        private ApplicationDbContext subdomainSchemaContext = subdomainSchemaContext;
 
         public async Task<Page<UserModel>> GetAllUsers(int pageNumber, int pageSize, string searchparam)
         {
 
-            IQueryable<UserModel> user = this.subdomainSchemaContext.Users;
+            IQueryable<UserModel> user = subdomainSchemaContext.Users;
 
             if (searchparam != null)
             {
@@ -46,12 +37,12 @@ namespace webapi_80.src.User.Services
 
         public async Task<UserModel> GetUserById(string ID)
         {
-            return await this.subdomainSchemaContext.Users.FindAsync(ID);
+            return await subdomainSchemaContext.Users.FindAsync(ID);
         }
 
         public async Task<UserModel> GetUserByEmail(string email)
         {
-            return await this.subdomainSchemaContext.Users.FirstOrDefaultAsync(x => x.Email == email);
+            return await subdomainSchemaContext.Users.FirstOrDefaultAsync(x => x.Email == email);
         }
 
         public async Task<bool> SaveChangesAsync()
@@ -67,7 +58,7 @@ namespace webapi_80.src.User.Services
 
         public async Task<bool> SaveUser(UserModel user)
         {
-            await this.subdomainSchemaContext.AddAsync(user);
+            await subdomainSchemaContext.AddAsync(user);
             int result = await subdomainSchemaContext.SaveChangesAsync();
             if (result > 0) { return true; } else { return false; }
         }

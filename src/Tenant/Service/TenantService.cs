@@ -23,7 +23,6 @@ namespace webapi_80.src.Tenant.Service
         private ApplicationDbContext Db;
         private ApplicationDbContext subdomainSchemaContext;
 
-        // private readonly UserManager<UserModel> userManager;
         private readonly ITenantSchema tenantSchema;
         public TenantService(ApplicationDbContext publicSchemaContext, ApplicationDbContext subdomainSchemaContext, ITenantSchema tenantSchema)
         {
@@ -121,7 +120,8 @@ namespace webapi_80.src.Tenant.Service
             // 
             Console.WriteLine("Running migration");
             var response = new TenantMigrationResultVM();
-            var tenantSchemaInstance = new TenantSchema();
+            // var tenantSchemaInstance = new TenantSchema();
+            var tenantSchemaInstance = tenantSchema;
             List<string> tenants = new List<string>();
             try {
                 tenants = Db.Tenants.Where(x => x.isSchemaCreated).Select(x => x.Subdomain).ToList();
