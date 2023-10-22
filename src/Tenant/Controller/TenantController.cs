@@ -12,7 +12,7 @@ namespace webapi_80.src.Tenant.Controllers
     [Route("api/[controller]")]
     [Produces("Application/json")]
     [ApiController]
-    [Authorize]
+    [Authorize(Policy = "SubdomainPolicy")]
 
     public class TenantController(IUnitofwork unitofwork, IConfiguration config, IPasswordHasher<UserModel> _passwordHasher) : ControllerBase
     {
