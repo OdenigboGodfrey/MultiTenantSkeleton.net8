@@ -49,6 +49,28 @@ namespace webapi_80.src.Tenant.Controllers
 
         }
 
+        [HttpDelete]
+        [Route("DeleteTenant")]
+        public async Task<IActionResult> DeleteTenant()
+        {
+            try
+            {
+                ApiResponse<bool> result = await this.Services_Repo.TenantServices.DeleteTenant();
+                
+                if (result.ResponseCode == "200") return Ok(result);
+                return BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new ApiResponse<bool>
+                {
+                    ResponseMessage = ex.Message,
+                    ResponseCode = "500",
+                });
+            }
+
+        }
+
 
     }
 }

@@ -14,7 +14,7 @@ namespace webapi_80.src.Tenant.Contract
         public Task<TenantModelVM> GetTenantById(Guid id);
         public Task<ApiResponse<bool>> RegisterTenant(RegisterTenantVM model);
         Task<TenantMigrationResultVM> MigrateTenants();
-        Task<ApiResponse<bool>> DeleteTenant(string subdomain);
+        Task<ApiResponse<bool>> DeleteTenant();
         Task<TenantModelVM> GetTenantBySubdomain(string subdomain);
         public Task<Page<TenantModelVM>> GetAllTenants(int pageNumber = 1, int pageSize = 20, string searchparam = null);
     }

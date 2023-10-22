@@ -21,17 +21,17 @@ namespace webapi_80.src.Tenant.SchemaTenant
                 tenantSchema._schema = origin;
                 var schemaExists = await tenantSchema.DoesCurrentSubdomainExist();
                 if(!schemaExists) {
-                    // var tenantCreated = await tenantSchema.NewTenant(tenantSchema._schema);
-                    // if (tenantCreated.ResponseCode == "201") Console.WriteLine($"tenantCreated {tenantCreated}");
+                    var tenantCreated = await tenantSchema.NewTenant(tenantSchema._schema);
+                    if (tenantCreated.ResponseCode == "201") Console.WriteLine($"tenantCreated {tenantCreated}");
 
-                    context.Response.StatusCode = 404;
-                    context.Response.ContentType = "application/json";
-                    var response = new {
-                        ResponseCode = "404",
-                        ResponseMessage = "Tenant Not found",
-                    };
-                    await context.Response.WriteAsync(JsonConvert.SerializeObject(response));
-                    return;
+                    // context.Response.StatusCode = 404;
+                    // context.Response.ContentType = "application/json";
+                    // var response = new {
+                    //     ResponseCode = "404",
+                    //     ResponseMessage = "Tenant Not found",
+                    // };
+                    // await context.Response.WriteAsync(JsonConvert.SerializeObject(response));
+                    // return;
 
                 }
 

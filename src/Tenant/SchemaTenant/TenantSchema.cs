@@ -11,6 +11,7 @@ using webapi_80.src.Shared.Utilities;
 using webapi_80.src.Shared.ViewModels;
 using System.Linq;
 using webapi_80.src.Shared.DatabaseContext;
+using Microsoft.Data.SqlClient;
 
 namespace webapi_80.src.Tenant.SchemaTenant
 {
@@ -23,6 +24,7 @@ namespace webapi_80.src.Tenant.SchemaTenant
         Task<bool> RunMigrations(string schemaName);
         Task<bool> NewSchema(string schemaName);
         string ExtractSubdomainFromRequest(HttpContext httpContext);
+        Task<bool> DeleteSchema(string schemaName);
     }
 
     public class TenantSchema : ITenantSchema
@@ -73,7 +75,7 @@ namespace webapi_80.src.Tenant.SchemaTenant
         {
             string domainName = domainURL;
             domainName = domainName.Replace("http://", "").Replace("https://", "");
-            
+
             domainName = domainName.Split(":")[0];
             var _schemaName = domainName.Split(".")[0];
             _schemaName = Utility.prepareSubdomainName(_schemaName);
@@ -108,7 +110,8 @@ namespace webapi_80.src.Tenant.SchemaTenant
                 ResponseMessage = ""
             };
             var preparedSubdomainName = Utility.prepareSubdomainName(Subdomain);
-            try {
+            try
+            {
                 // on first run, 
                 Console.WriteLine($"new tenant run");
                 if (this.context.Tenants.Where(x => x.Subdomain == preparedSubdomainName).Count() > 0)
@@ -118,7 +121,8 @@ namespace webapi_80.src.Tenant.SchemaTenant
                     return response;
                 }
             }
-            catch(Exception ex) {
+            catch (Exception ex)
+            {
                 // would fail for first run
                 //throw ex;
             }
@@ -152,16 +156,19 @@ namespace webapi_80.src.Tenant.SchemaTenant
 
             int result = await this.context.SaveChangesAsync();
             response.Data = result > 0 ? true : false;
-            if (response.Data) {
+            if (response.Data)
+            {
                 response.ResponseMessage = "Tenant information saved";
                 response.ResponseCode = "201";
-            } else {
+            }
+            else
+            {
                 response.ResponseMessage = "Tenant information failed to be saved";
                 response.ResponseCode = "500";
             }
             return response;
         }
-       
+
 
         public ApplicationDbContext getRequestContext()
         {
@@ -175,14 +182,17 @@ namespace webapi_80.src.Tenant.SchemaTenant
             if (subdomainUrl == "api" || subdomainUrl == "admin" || subdomainUrl == rootDomain)
             {
                 return new ApplicationDbContext(conString, new DbContextSchema());
-            } else {
+            }
+            else
+            {
                 return new ApplicationDbContext(conString, new DbContextSchema(getSubdomainName(hostURL)));
             }
         }
 
         public async Task<bool> DoesCurrentSubdomainExist()
         {
-            try {
+            try
+            {
                 string rootDomain = _config["RootDomain"];
                 if (_schema == "api" || _schema == "admin" || _schema == rootDomain)
                 {
@@ -194,7 +204,9 @@ namespace webapi_80.src.Tenant.SchemaTenant
                 if (tenant == null) return false;
                 Console.WriteLine($"tenant ${tenant.Subdomain}");
                 return true;
-            } catch(Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 return false;
             }
         }
@@ -213,6 +225,53 @@ namespace webapi_80.src.Tenant.SchemaTenant
             return _host;
         }
 
+        public async Task<bool> DeleteSchema(string schemaName)
+        {
+            try
+            {
+                String finalSQL = "";
+                using (DbConnection connection = new SqlConnection(conString)) // Replace with the appropriate database provider
+                {
+                    connection.Open();
+
+                    // Drop all tables in the schema
+                    using (var command = connection.CreateCommand())
+                    {
+                        command.CommandText = "SELECT table_name FROM information_schema.tables WHERE table_schema = @schemaName";
+                        command.Parameters.Add(new SqlParameter("@schemaName", schemaName));
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string tableName = reader.GetString(0);
+
+                                // Create a new DbCommand for dropping the table
+                                finalSQL += $"DROP TABLE {schemaName}.{tableName};";
+                            }
+                        }
+                    }
+
+
+                    // Drop the schema
+                    finalSQL += $"DROP SCHEMA {schemaName}";
+                    using (var dropSchemaCommand = connection.CreateCommand())
+                    {
+                        dropSchemaCommand.CommandText = finalSQL;
+                        dropSchemaCommand.ExecuteNonQuery();
+                    }
+                }
+
+                var _schemaExist = (string)context.ExecuteScalar($"SELECT name FROM sys.schemas where name = '{schemaName}';");
+
+                return string.IsNullOrEmpty(_schemaExist) ? true : false;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"exception {e.Message} {e.StackTrace}");
+                return false;
+            }
+        }
     }
 
 }

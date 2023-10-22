@@ -50,17 +50,10 @@ builder.Services.AddAuthorization(options =>
         {
             
             TenantSchema tenantSchema = new TenantSchema();
-            
-            AuthorizationFilterContext authorizationFilterContext = context.Resource as AuthorizationFilterContext;
-            Console.WriteLine($"Asserting policy ${authorizationFilterContext != null}");
-
             var httpContext = (DefaultHttpContext) context.Resource;
             if (httpContext != null)
             {
-
-
                 var currentSubdomain = tenantSchema.ExtractSubdomainFromRequest(httpContext);
-
 
                 // Get the claim from the user's identity
                 string? groupSidClaim = context.User.FindFirst(ClaimTypes.GroupSid)?.Value;

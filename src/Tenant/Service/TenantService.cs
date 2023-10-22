@@ -163,14 +163,16 @@ namespace webapi_80.src.Tenant.Service
             return response;
         }
 
-        public async Task<ApiResponse<bool>> DeleteTenant(string subdomain)
+        public async Task<ApiResponse<bool>> DeleteTenant()
         {
+            string subdomain = subdomainSchemaContext.Schema;
             var response = new ApiResponse<bool> {
                 Data=false,
                 ResponseCode="400",
                 ResponseMessage=""
             };
-            // create relationship between user and company
+            
+            // check subdomain exists
             Model.Tenant tenant = Db.Tenants.FirstOrDefault(x => x.Subdomain == subdomain);
             if (tenant == null) 
             {
@@ -178,17 +180,20 @@ namespace webapi_80.src.Tenant.Service
                 return response;
             }
 
-            // remove admin
-            var admin = Db.Users.FirstOrDefault(x => x.Id == new Guid(tenant.AdminId));
-            if (admin == null) {
-                response.ResponseMessage = "Tenant admin user not found.";
-                return response;
+            var deleteResult = await tenantSchema.DeleteSchema(subdomain);
+            if (deleteResult) {
+                // Db.Users.Remove(admin);
+                Db.Tenants.Remove(tenant);
+                var result = await Db.SaveChangesAsync();
+                response.Data = result > 0;
+                response.ResponseCode = (result > 0 && deleteResult) ? "200" : "500";
+                
+            } else {
+                response.ResponseCode = "500";
             }
 
-            var result = await Db.SaveChangesAsync();
-            response.Data = result > 0;
-            response.ResponseMessage = (result > 0) ? "Tenant information removed" : "Failed to remove tenant information";
-            response.ResponseCode = (result > 0) ? "200" : "500";
+            response.ResponseMessage = (response.ResponseCode == "200") ? "Tenant information removed" : "Failed to remove tenant information";
+
             return response;
         }
 
