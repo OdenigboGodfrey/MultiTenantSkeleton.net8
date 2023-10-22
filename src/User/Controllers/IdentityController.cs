@@ -1,24 +1,25 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using webapi_80.src.Shared.Contract;
 using webapi_80.src.User.Models;
 using NLog;
-using webapi_80.src.Tenant.SchemaTenant;
 using webapi_80.src.Shared.ViewModels;
 using webapi_80.src.User.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
 using webapi_80.src.Shared.Utilities;
-using Microsoft.AspNetCore.Identity;
+using System.Text;
 
 namespace webapi_80.src.User.Controllers
 {
     [Route("api/[controller]")]
     [Produces("Application/json")]
     [ApiController]
+    // [Authorize]
+    [Authorize(Policy = "SubdomainPolicy")]
 
     public class IdentityController(IUnitofwork unitofwork, IConfiguration config, IPasswordHasher<UserModel> _passwordHasher) : ControllerBase
     {
@@ -58,6 +59,7 @@ namespace webapi_80.src.User.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [Route("UserSignup")]
         public async Task<IActionResult> UserSignup([FromBody] UserSignupModel Model)
         {
@@ -113,6 +115,7 @@ namespace webapi_80.src.User.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [Route("Login")]
         public async Task<IActionResult> UserSignup([FromBody] LoginModel Model)
         {
@@ -133,53 +136,62 @@ namespace webapi_80.src.User.Controllers
                 var verifyHashedPasswordResult = _passwordHasher.VerifyHashedPassword(null, user.Password, Model.Password);
                 if (verifyHashedPasswordResult == PasswordVerificationResult.Success)
                 {
-                    return Ok(new ApiResponse<Boolean>
+                    var accessToken = await GenerateJwtTokenAsync(Model.Email, user, unitofwork.subdomain);
+                    if (accessToken == null)
+                    {
+                        return BadRequest(new ApiResponse<String>
+                        {
+                            ResponseCode = "400",
+                            ResponseMessage = "Token generation failed.",
+                            Data = ""
+                        });
+                    }
+                    return Ok(new ApiResponse<String>
                     {
                         ResponseCode = "00",
                         ResponseMessage = "Login ok",
-                        Data = true,
-                        user = user
+                        Data = accessToken.ToString(),
+                        user = user,
                     });
                 }
                 else
                 {
-                    return NotFound(new ApiResponse<Boolean>
+                    return NotFound(new ApiResponse<String>
                     {
                         ResponseCode = "404",
                         ResponseMessage = "Email/password incorrect.",
-                        Data = false
+                        Data = ""
                     });
                 }
             }
         }
 
-        // [HttpGet]
-        // [Route("GetAllUsers")]
-        // public async Task<IActionResult> GetUsers(
-        //     [FromQuery] int pageSize = 20,
-        //    [FromQuery] int pageNumber = 1)
-        // {
+        private async Task<object> GenerateJwtTokenAsync(string email, UserModel user, String subdomain)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
+                new Claim(ClaimTypes.GroupSid, subdomain),
+            };
 
-        //     Page<UserModel> users = await this.Services_Repo.UserServices.GetAllUsers(pageNumber, pageSize, null);
-        //     if (users.Items.Count() < 1)
-        //     {
 
-        //         return NotFound(new ApiResponse<Page<UserModel>>
-        //         {
-        //             ResponseCode = "400",
-        //             ResponseMessage = "No records found.",
-        //             Data = users,
-        //         });
-        //     }
-        //     else
-        //     {
-        //         return Ok(new ApiResponse<Page<UserModel>>
-        //         {
-        //             ResponseCode = "200",
-        //             ResponseMessage = "Login ok",
-        //             Data = users,
-        //         });
-        //     }
-        // }
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtokenOptions.Key));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expires = DateTime.UtcNow.AddMinutes(30);
+
+            var token = new JwtSecurityToken(
+                JwtokenOptions.Issuer,
+               JwtokenOptions.Issuer,
+                claims,
+                expires: expires,
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
     }
 }

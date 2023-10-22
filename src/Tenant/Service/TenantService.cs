@@ -192,5 +192,28 @@ namespace webapi_80.src.Tenant.Service
             return response;
         }
 
+        public async Task<Page<TenantModelVM>> GetAllTenants(int pageNumber = 1, int pageSize = 20, string searchparam = null)
+        {
+            var response = new ApiResponse<bool> {
+                Data=false,
+                ResponseCode="400",
+                ResponseMessage=""
+            };
+            // create relationship between user and company
+            // Model.Tenant tenant = Db.Tenants.FirstOrDefault(x => x.Subdomain == subdomain);
+
+            IQueryable<Model.Tenant> tenants = Db.Tenants;
+
+            if (searchparam != null)
+            {
+                tenants = tenants.Where(x => (!string.IsNullOrEmpty(x.CompanyName) && EF.Functions.Like(x.CompanyName, $"%{searchparam}%")) ||
+                                       EF.Functions.Like(x.Subdomain, $"%{searchparam}%"));
+
+            };
+
+            var res = await tenants.Select(x => x.Map()).ToPageListAsync(pageNumber, pageSize);
+            return res;
+            
+        }
     }
 }

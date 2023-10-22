@@ -9,6 +9,8 @@ using webapi_80.src.User.Services;
 // using webapi_80.src.Weather.Services;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using webapi_80.src.Tenant.SchemaTenant.SchemaContext;
+using webapi_80.src.Tenant.Contract;
+using webapi_80.src.Tenant.Service;
 
 namespace webapi_80.src.Shared.Contract
 {
@@ -18,27 +20,21 @@ namespace webapi_80.src.Shared.Contract
 
         private readonly ApplicationDbContext subdomainSchemaContext;
         private readonly ApplicationDbContext publicSchemaContext;
-        private IHttpContextAccessor _httpContextAccessor;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ITenantSchema tenantSchema;
+        public readonly String subdomain;
         
         public Unitofwork(IHttpContextAccessor httpContextAccessor, ITenantSchema tenantSchema) {
             var _host = tenantSchema.ExtractSubdomainFromRequest(httpContextAccessor.HttpContext);
+            subdomain = _host;
             this.subdomainSchemaContext = tenantSchema.getRequestContext(_host);
             _httpContextAccessor = httpContextAccessor;
             publicSchemaContext = new ApplicationDbContext(new DbContextSchema());
+            this.tenantSchema = tenantSchema;
         }
         
-        // public IWeatherInterface GetWeatherService;
         public IUserServices GetUserServices;
-
-
-        // public IWeatherInterface WeatherService
-        // {
-        //     get
-        //     {
-        //         if (this.GetWeatherService == null) { this.GetWeatherService = new WeatherService(weatherRepository); }
-        //         return this.GetWeatherService;
-        //     }
-        // }
+        public ITenantService GetTenantService;
 
         public IUserServices UserServices {
             get
@@ -49,5 +45,17 @@ namespace webapi_80.src.Shared.Contract
                 return this.GetUserServices;
             }
         }
+
+        public ITenantService TenantServices {
+            get
+            {
+                if (this.GetTenantService == null) {
+                    this.GetTenantService = new TenantService(this.publicSchemaContext, this.subdomainSchemaContext, tenantSchema);
+                }
+                return this.GetTenantService;
+            }
+        }
+
+        string IUnitofwork.subdomain => this.subdomain;
     }
 }
