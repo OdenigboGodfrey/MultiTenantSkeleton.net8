@@ -49,7 +49,6 @@ namespace webapi_80.src.Tenant.SchemaTenant
             // open new connection
             conString = _config.GetSection("ConnectionStrings")["MultiTenantBlog"];
             this.context = new ApplicationDbContext(conString, new DbContextSchema());
-            // create new schema if not exist
             _schema = getSubdomainName(hostURL);
         }
 
@@ -59,17 +58,18 @@ namespace webapi_80.src.Tenant.SchemaTenant
         {
             schemaName = Utility.prepareSubdomainName(schemaName);
 
-            var _schemaExist = (string)context.ExecuteScalar($"SELECT name FROM sys.schemas where name = '{schemaName}';");
+            List<DbParameter> parameters = new List<DbParameter>() { { new SqlParameter("@paramName", SqlDbType.NVarChar) { Value = schemaName } } };
+            var _schemaExist = (string)context.ExecuteScalar($"SELECT name FROM sys.schemas where name = @paramName;", parameters);
             if (string.IsNullOrEmpty(_schemaExist))
             {
-                // doesnt exist
-                // create 
-                await this.context.Database.ExecuteSqlRawAsync($"CREATE SCHEMA {schemaName};");
-                _schemaExist = (string)context.ExecuteScalar($"SELECT name FROM sys.schemas where name = @paramName;", new List<DbParameter>() { new Microsoft.Data.SqlClient.SqlParameter("@paramName", schemaName) });
+                // doesn't exist // create 
+                await this.context.Database.ExecuteSqlRawAsync($"CREATE SCHEMA [{schemaName}];");
+                _schemaExist = (string)context.ExecuteScalar($"SELECT name FROM sys.schemas where name = @paramName;", parameters);
             }
 
             return string.IsNullOrEmpty(_schemaExist) ? false : true;
         }
+
 
         public string getSubdomainName(string domainURL)
         {
@@ -230,7 +230,7 @@ namespace webapi_80.src.Tenant.SchemaTenant
             try
             {
                 String finalSQL = "";
-                using (DbConnection connection = new SqlConnection(conString)) // Replace with the appropriate database provider
+                using (DbConnection connection = new SqlConnection(conString))
                 {
                     connection.Open();
 
@@ -272,7 +272,7 @@ namespace webapi_80.src.Tenant.SchemaTenant
                 return false;
             }
         }
-    
+
     }
 
 }

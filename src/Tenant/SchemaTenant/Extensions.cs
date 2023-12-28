@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.Common;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Newtonsoft.Json;
@@ -20,7 +21,8 @@ namespace webapi_80.src.Tenant.SchemaTenant
                 var origin = tenantSchema.ExtractSubdomainFromRequest(context);
                 tenantSchema._schema = origin;
                 var schemaExists = await tenantSchema.DoesCurrentSubdomainExist();
-                if(!schemaExists) {
+                if (!schemaExists)
+                {
                     var tenantCreated = await tenantSchema.NewTenant(tenantSchema._schema);
                     if (tenantCreated.ResponseCode == "201") Console.WriteLine($"tenantCreated {tenantCreated}");
 
@@ -45,12 +47,12 @@ namespace webapi_80.src.Tenant.SchemaTenant
        CommandType commandType = CommandType.Text,
        int? commandTimeOutInSeconds = null)
         {
-            Object value = ExecuteScalar(context.Database, sql, parameters,
+            Object value = ExecuteScalarFunc(context.Database, sql, parameters,
                                          commandType, commandTimeOutInSeconds);
             return value;
         }
 
-        public static object ExecuteScalar(this DatabaseFacade database,
+        public static object ExecuteScalarFunc(this DatabaseFacade database,
         string sql, List<DbParameter> parameters = null,
         CommandType commandType = CommandType.Text,
         int? commandTimeOutInSeconds = null)
@@ -76,6 +78,5 @@ namespace webapi_80.src.Tenant.SchemaTenant
             }
             return value;
         }
-
     }
 }
