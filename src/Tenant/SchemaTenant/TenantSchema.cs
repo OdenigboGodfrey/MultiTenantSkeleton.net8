@@ -58,13 +58,22 @@ namespace webapi_80.src.Tenant.SchemaTenant
         {
             schemaName = Utility.prepareSubdomainName(schemaName);
 
-            List<DbParameter> parameters = new List<DbParameter>() { { new SqlParameter("@paramName", SqlDbType.NVarChar) { Value = schemaName } } };
-            var _schemaExist = (string)context.ExecuteScalar($"SELECT name FROM sys.schemas where name = @paramName;", parameters);
+            var _schemaExist = (string)context.ExecuteScalar($"SELECT name FROM sys.schemas where name = @paramName;", new List<DbParameter>() { { new SqlParameter("@paramName", SqlDbType.NVarChar) { Value = schemaName } } });
             if (string.IsNullOrEmpty(_schemaExist))
             {
                 // doesn't exist // create 
-                await this.context.Database.ExecuteSqlRawAsync($"CREATE SCHEMA [{schemaName}];");
-                _schemaExist = (string)context.ExecuteScalar($"SELECT name FROM sys.schemas where name = @paramName;", parameters);
+                String createSQL = $"CREATE SCHEMA [{schemaName}];";
+                using (SqlConnection connection = new SqlConnection(conString))
+                {
+                    connection.Open();
+
+                    using (SqlCommand command = new SqlCommand(createSQL, connection))
+                    {
+                        // Execute the command
+                        command.ExecuteNonQuery();
+                    }
+                }
+                _schemaExist = (string)context.ExecuteScalar($"SELECT name FROM sys.schemas where name = @paramName;", new List<DbParameter>() { { new SqlParameter("@paramName", SqlDbType.NVarChar) { Value = schemaName } } });
             }
 
             return string.IsNullOrEmpty(_schemaExist) ? false : true;
@@ -230,7 +239,7 @@ namespace webapi_80.src.Tenant.SchemaTenant
             try
             {
                 String finalSQL = "";
-                using (DbConnection connection = new SqlConnection(conString))
+                using (SqlConnection connection = new SqlConnection(conString))
                 {
                     connection.Open();
 
@@ -254,7 +263,7 @@ namespace webapi_80.src.Tenant.SchemaTenant
 
 
                     // Drop the schema
-                    finalSQL += $"DROP SCHEMA {schemaName}";
+                    finalSQL += $"DROP SCHEMA [{schemaName}]";
                     using (var dropSchemaCommand = connection.CreateCommand())
                     {
                         dropSchemaCommand.CommandText = finalSQL;

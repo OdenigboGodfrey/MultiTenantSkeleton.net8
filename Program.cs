@@ -113,7 +113,7 @@ builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<ITenantSchema, TenantSchema>();
 builder.Services.AddScoped<TenantService>();
 builder.Services.AddTransient<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
-builder.WebHost.UseUrls(new string[] { "http://0.0.0.0:5043", "https://0.0.0.0:7207" });
+builder.WebHost.UseUrls(["http://0.0.0.0:5043", "https://0.0.0.0:7207"]);
 var app = builder.Build();
 app.CustomEnginerInterceptor();
 var scope = app.Services.CreateScope();
